@@ -1,0 +1,16 @@
+,Region,Class
+0,frontal,cerebrum
+1,temporal,cerebrum
+2,parietal,cerebrum
+3,occipital,cerebrum
+4,limbic,cerebrum
+5,cerebrum,cerebrum
+6,cerebellum,hindbrain
+7,thalamus,limbic system
+8,hypothalamus,limbic system
+9,hippocampus,limbic system
+10,amygdala,limbic system
+11,midbrain,brainstem
+12,pons,brainstem
+13,medula,brainstem
+14,brainstem,brainstem

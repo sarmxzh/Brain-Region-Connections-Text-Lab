@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<head>
+  <meta charset='utf-8'>
+  <title>Brain Region Connections</title>
+  <style>
+    body{
+      text-align: center;
+      background-color: #edebe3;
+      margin: 0;
+    }
+    section{
+      width: 80%;
+      height: 500px;
+      width: 1000px;
+      margin: 0 auto;
+    }
+    div{
+      width: 500px;
+      height: 450px;
+      margin-bottom: 50px;
+      /*margin-top: 50px;*/
+    }
+    input{
+      margin-bottom: 30px;
+    }
+    p{
+      margin-bottom: 100px;
+    }
+    #legend{
+      text-align: left;
+      width: 100%;
+      height: 20px;
+      margin-left: 300px;
+    }
+    .left{
+      margin-left: -5%;
+      float: left;
+    }
+    .right{
+      margin-left: 60%;
+    }
+  </style>
+  <script src='https://d3js.org/d3.v4.min.js'></script>
+</head>
+
+<body>
+  <header>
+    <h1> Brain Region Connectivity</h1>
+    <p> In this data visualization, I took 3,150 paper abstracts related to brain region connectivity from pubmed.gov and
+      analyzed the connectivity of the regions based off the literature. Note that the medula term was not in any abstracts
+      but I kept it in the visualization because it is an important part of the brain. The brain regions are color-coded <body>
+      the general larger regions that they are in. </p>
+  </header>
+
+  <div id="legend">
+    <h3>Legend:</h3>
+  </div>
+
+  <section id="section1">
+    <div id="container1" class="left"></div>
+    <div id="container2" class="right"></div>
+  </section>
+    <p>The above two diagrams generally summarize the data analysis of brain region connectivity research. The connectivity of each
+    region in the above right figure is based off of Chi-Squared value, with the width of the connecting lines weighted respectively.
+    The above left figure simply shows the physical adjacency of the brain regions addressed. Some of the regions shown are actually the
+    larger regions. Thus, the adjacency lines are weighted less (0.5px for general regions and 1px for smaller, more specific regions).
+    Hold the mouse over the regions to see what they are, and scroll over the weighted connectivity lines to see the connectivity, chi-squared. </p>
+  <section id="section2">
+    <div id="container3" class="left"></div>
+    <div id="container4" class="right"></div>
+  </section>
+    <p>The above two graphs represent the brain regions that are not connected according to the literature but may or may not be adjacent.</p>
+  <section id = "section3">
+    <div id="container5" class="left">
+      <label for="thresholdInput5">Set a threshold: </label>
+      <input type="number" id="thresholdInput5" placeholder="Example: 5">
+      <button id="button5">Submit</button>
+    </div>
+    <div id="container6" class="right">
+      <label for="thresholdInput6">Set a threshold: </label>
+      <input type="number" id="thresholdInput6" placeholder="Example: 5">
+      <button id="button6">Submit</button>
+    </div>
+  </section>
+  <p> The above two graphs represent the brain regions that are connected according the literature analyzed but may or may not be adjacent. Play with
+  the adjustable threshold value to see what changes in the graph. </p>
+
+<script>
+// Constants
+const width = 500,
+      height = 450,
+      margin = {
+          top: 10,
+          bottom: 100,
+          left: 10,
+          right: 10,
+      };
+
+function generateSVG(id, width, height){
+  return d3.select(id).append("svg")
+                .attr("width", width)
+                .attr("height", height)
+                .style("margin", "0 auto")
+                .style("display", "block")
+                .style("overflow", "visible");
+}
+var legend = generateSVG("#legend", width, 20);
+for(var i=0; i<4; i++){
+  var label = legend.append("text")
+        .attr("x", width/2*i - 330)
+        .attr("y", -25)
+  legend.append("circle")
+        .attr("cx", width/2*i - 350)
+        .attr("cy", -30)
+        .attr("r", 10)
+        .attr("fill", function(){
+          if(i == 0){
+            label.text("Cerebrum")
+            return "#b373d1";
+          }
+          if(i == 1){
+            label.text("Hindbrain")
+            return "#74a7d3";
+          }
+          if(i ==2){
+            label.text("Limbic System")
+            return "#4faf60";
+          }
+          else{
+            label.text("Brain Stem")
+            return "#c4a062";
+          }
+        })
+}
+
+var svg1 = generateSVG("#container1", width, height)
+d3.select("#container1").append("p").text("Brain Regions with Lines Representing Connectivity Between Them. The Thicker the Line, the Stronger the Connection");
+var svg2 = generateSVG("#container2", width, height)
+d3.select("#container2").append("p").text("Brain Regions with Connecting Lines Representing Adjacency. Slightly Thinner Lines Connect More General Regions with Other Regions");
+var svg3 = generateSVG("#container3", width, height-30)
+d3.select("#container3").append("p").text("Brain Regions that are not Connected (Connectivity Less Than 5) but are Adjacent");
+var svg4 = generateSVG("#container4", width, height-30)
+d3.select("#container4").append("p").text("Brain Regions that are neither Connected (Connectivity Less Than 5) nor Adjacent");
+var svg5 = generateSVG("#container5", width, height-30)
+d3.select("#container5").append("p").text("Brain Regions that are Connected and Adjacent");
+var svg6 = generateSVG("#container6", width, height-30)
+d3.select("#container6").append("p").text("Brain Regions that are Connected but not Adjacent");
+
+function generateCircles(svg, data, radius){
+  var angleDiff = 2*Math.PI/data.length;
+  generateArcPaths(svg, radius)
+
+  return svg.selectAll("circle")
+    .data(data).enter()
+    .append("circle")
+    .attr("cx", function(d, i){
+      return width/2 + radius * Math.sin(angleDiff*i)
+    })
+    .attr("cy", function(d,i){
+      return height/2 - 15 + radius * Math.cos(angleDiff*i)
+    })
+    .attr("r", 15)
+    .attr("fill", function(d){
+      if(d.Class == "cerebrum"){
+        return "#b373d1";
+      }
+      else if(d.Class == "hindbrain"){
+        return "#74a7d3";
+      }
+      else if(d.Class == "limbic system"){
+        return "#4faf60";
+      }
+      else if(d.Class == "brainstem"){
+        return "#c4a062";
+      }
+      else{ //should not occur - used to catch errors
+        console.log(d.Region)
+        return "black";
+      }
+    })
+    .on("mouseover", function(d){
+      d3.select(this)
+          .transition()
+          .duration(300)
+          .attr("r", 17)
+      svg.append("text")
+          .attr("x", +(d3.select(this).attr("cx")))
+          .attr("y", +(d3.select(this).attr("cy")))
+          .text(function(){
+            if(d.Region == d.Class){
+              return d.Class
+            }
+            else{
+              return `${d.Region} in ${d.Class}`
+            }
+          })
+          .classed("popup", true)
+          .attr("opacity", 0.0)
+          .transition("remove_popup")
+          .duration(200)
+          .attr("opacity", 1.0)
+    })
+    .on("mouseout", function(d){
+      d3.selectAll(".popup")
+          .transition("remove_popup")
+          .duration(200)
+          .attr("opacity", 0.0)
+          .remove()
+      d3.select(this)
+          .transition()
+          .duration(300)
+          .attr("r", 15)
+    })
+}
+
+function generateArc(startAngle, endAngle, radius){
+  return d3.arc()
+    .innerRadius(radius+20)
+    .outerRadius(radius+35)
+    .startAngle(startAngle)
+    .endAngle(endAngle)
+}
+
+function generateArcPaths(svg, radius){
+  var opacity = 0.5;
+  var x = width/2;
+  var y = height/2-15;
+  svg.append("path")
+    .attr("fill","#4faf60")
+    .attr("opacity", opacity)
+    .attr("d", generateArc(-Math.PI/3-.2, Math.PI/8, radius))
+    .attr("transform", `translate(${x}, ${y})`);
+  svg.append("path")
+    .attr("fill","#74a7d3")
+    .attr("opacity", opacity)
+    .attr("d", generateArc(Math.PI/8, Math.PI/8+.46, radius))
+    .attr("transform", `translate(${x}, ${y})`);
+  svg.append("path")
+    .attr("fill","#b373d1")
+    .attr("opacity", opacity)
+    .attr("d", generateArc(Math.PI/8+.46, Math.PI+.2, radius))
+    .attr("transform", `translate(${x}, ${y})`);
+  svg.append("path")
+    .attr("fill","#c4a062")
+    .attr("opacity", opacity)
+    .attr("d", generateArc(Math.PI+.2,2*Math.PI-Math.PI/3-.2, radius))
+    .attr("transform", `translate(${x}, ${y})`);
+}
+
+function findLineCoords(dataset, d, data, r){
+  var coordinates = [0,0,0,0];
+  var pair = d.Pair;
+  var twoPoints = pair.split("'")
+  twoPoints = [twoPoints[1], twoPoints[3]]
+  var angleDiff = 2*Math.PI/data.length;
+  for(var i = 0; i < data.length; i++) {
+   if(data[i].Region === twoPoints[0]) {
+     coordinates[0] = width/2 + (r-15) * Math.sin(angleDiff*i);
+     coordinates[1] = height/2 + (r-15) * Math.cos(angleDiff*i)-15;
+   }
+   if(data[i].Region === twoPoints[1]){
+     coordinates[2] = width/2 + (r-15) * Math.sin(angleDiff*i);
+     coordinates[3] = height/2 + (r-15) * Math.cos(angleDiff*i)-15;
+   }
+  }
+  return coordinates;
+}
+
+function scaleLineStrokeWidth(dataset, d){
+  var range = d3.extent(dataset, function(d) {return parseFloat(d.XSquared)});
+  // console.log(range)
+  var scalingRange = d3.scaleLinear()
+                      .domain(range)
+                      .range([0, 5]);
+  return scalingRange(d.XSquared)
+}
+
+function generateLines(svg, dataset, data, radius){
+  return svg.selectAll("line")
+    .data(dataset)
+    .enter()
+    .append("line")
+    .attr("x1", function(d){
+      return findLineCoords(dataset, d, data, radius)[0]
+    })
+    .attr("y1", function(d){
+      return findLineCoords(dataset, d, data, radius)[1]
+    })
+    .attr("x2", function(d){
+      return findLineCoords(dataset, d, data, radius)[2]
+    })
+    .attr("y2", function(d){
+      return findLineCoords(dataset, d, data, radius)[3]
+    })
+    .attr("stroke", "gray")
+    .on("mouseover", function(d){
+      d3.select(this)
+          .transition()
+          .duration(300)
+          .attr("opacity", 0.7);
+      svg.append("text")
+          .attr("x", d3.mouse(this)[0])
+          .attr("y", d3.mouse(this)[1])
+          .text(function(){
+            if(d.Adjacent != 0){
+              return `Connectivity: ${d.XSquared}, Adjacent`
+            }
+            else{
+              return `Connectivity: ${d.XSquared}, Not Adjacent`
+            }
+          })
+          .classed("popup", true)
+          .attr("opacity", 0.0)
+          .transition("remove_popup")
+          .duration(200)
+          .attr("opacity", 1.0)
+    })
+    .on("mouseout", function(d){
+      d3.selectAll(".popup")
+          .transition("remove_popup")
+          .duration(200)
+          .attr("opacity", 0.0)
+          .remove()
+      d3.select(this)
+          .transition()
+          .duration(300)
+          .attr("opacity", 1.0)
+    });
+}
+
+d3.csv("brainRegionPairs.csv", function(error, dataset){
+  d3.csv("classedRegions.csv", function(error, data){
+    var radius = 200
+    var circles1 = generateCircles(svg1, data, radius);
+    generateLines(svg1, dataset, data, radius)
+      .attr("stroke-width", function(d){
+        return scaleLineStrokeWidth(dataset, d)
+      });
+
+    var circles2 = generateCircles(svg2, data, radius)
+    generateLines(svg2, dataset, data, radius)
+      .attr("stroke-width", function(d){
+        return d.Adjacent;
+      });
+
+
+    var circles3 = generateCircles(svg3, data, radius-20)
+    generateLines(svg3, dataset, data, radius-20)
+      .attr("stroke-width", function(d){
+        if(parseFloat(d.XSquared) < 5 && d.Adjacent != 0){
+          // console.log(d.XSquared, d.Adjacent)
+          return d.Adjacent;
+        }
+        else{
+          return 0;
+        }
+      });
+
+    var circles4 = generateCircles(svg4, data, radius-20)
+    generateLines(svg4, dataset, data, radius-20)
+      .attr("stroke-width", function(d){
+        if(parseFloat(d.XSquared) < 5 && d.Adjacent == 0){
+          return 1;
+        }
+        else{
+          return 0;
+        }
+      })
+      .attr("stroke", "white")
+
+    var threshold5 = 5;
+    var threshold6 = 5;
+    var circles5 = generateCircles(svg5, data, radius-20)
+    var lines5 = generateLines(svg5, dataset, data, radius-20)
+      .attr("stroke-width", function(d){
+        if(parseFloat(d.XSquared) >= threshold5 && d.Adjacent == 0){
+          return scaleLineStrokeWidth(dataset, d)
+        }
+        else{
+          return 0;
+        }
+      });
+    var circles6 = generateCircles(svg6, data, radius-20)
+    var lines6 = generateLines(svg6, dataset, data, radius-20)
+      .attr("stroke-width", function(d){
+        if(parseFloat(d.XSquared) >= threshold6 && d.Adjacent != 0){
+          return scaleLineStrokeWidth(dataset, d)
+        }
+        else{
+          return 0;
+        }
+      });
+    document.getElementById("button5").addEventListener("click", function(){
+      threshold5 = document.getElementById("thresholdInput5").value;
+      console.log(threshold5)
+      lines5.attr("stroke-width", function(d){
+          if(parseFloat(d.XSquared) >= threshold5 && d.Adjacent == 0){
+            return scaleLineStrokeWidth(dataset, d)
+          }
+          else{
+            return 0;
+          }
+        });
+    })
+    document.getElementById("button6").addEventListener("click", function(){
+      threshold6 = document.getElementById("thresholdInput6").value;
+      lines6.attr("stroke-width", function(d){
+          if(parseFloat(d.XSquared) >= threshold6 && d.Adjacent != 0){
+            return scaleLineStrokeWidth(dataset, d)
+          }
+          else{
+            return 0;
+          }
+        });
+    })
+  })
+})
+</script>
+</body>
